@@ -81,8 +81,8 @@ void ofApp::getAverage(){
     if (diff > threshhold) {
         
         //play with these for sensitivity
-        currentVolume -= 0.01f;
-        targetVolume -= 0.0001f;
+        currentVolume -= 0.05f;
+        targetVolume -= 0.01f;
         
         //as punch counter increases, volume -= 0.01f each time
         //current volume is affected directly by a punch (goes down a lot) but target volume goes
