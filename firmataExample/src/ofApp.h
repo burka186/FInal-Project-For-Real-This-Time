@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
+#include "NoiseObjects.h"
 #include "ofEvents.h"
 
 
@@ -23,9 +24,13 @@ public:
 	void dragEvent(ofDragInfo dragInfo);
 	void gotMessage(ofMessage msg);
     
-    void getAverage();
-    vector<int> allReadings;
-    float smoothReading;
+    //visuals: ----------------------------------------------
+    
+    //position vector
+    ofVec2f pos;
+    
+    //vector of NoiseObjects to be drawn to screen
+    vector <NoiseObjects> noiseCollection;
 
     //sound: ------------------------------------------------
     void audioOut(float * input, int bufferSize, int nChannels);
@@ -52,16 +57,21 @@ public:
     //arduino:----------------------------------------
     
 	ofArduino	ard;
-	bool		bSetupArduino;			// flag variable for setting up arduino once
+	bool		bSetupArduino; // flag variable for setting up arduino once
     
-private:
+    
+    private:
     
     void setupArduino(const int & version);
     void digitalPinChanged(const int & pinNum);
     void analogPinChanged(const int & pinNum);
 	void updateArduino();
+    void getAverage(); // average the incoming readings from the arduino
     
-    int ardReading;
+    vector<int> allReadings; //store all readings in a vector
+    float smoothReading; //smoothed reading after averaging (duh)
+    
+    int ardReading; //raw reading from arduino
     string potValue;
 
 };

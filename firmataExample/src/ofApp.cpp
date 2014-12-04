@@ -6,10 +6,17 @@ void ofApp::setup(){
 
 	ofSetVerticalSync(true);
 	ofSetFrameRate(60);
-
-	ofBackground(255,0,130);
+	ofBackground(0);
     
-    smoothReading = 0.;
+    //VISUAL STUFF HERE ---------------------------------------
+    
+    //create 500 initial NoiseObjects at random positions in the center of the screen
+    //and push these back to the noiseCollection vector
+    for (int i = 0; i < 500; i++) {
+        NoiseObjects newNoise(ofRandom(ofGetWindowWidth()/3, ofGetWindowWidth()/2), ofRandom((2*ofGetWindowHeight())/6, (4*ofGetWindowHeight())/6));
+        noiseCollection.push_back(newNoise);
+        //cout << newNoise.text << endl;
+    }
     
     //SOUND STUFF HERE ----------------------------------------
     
@@ -26,9 +33,9 @@ void ofApp::setup(){
     
     soundStream.setup(this, 2, 0, sampleRate, bufferSize, 4);
     
+    smoothReading = 0.;
+    
     //ARDUINO STUFF HERE -----------------------------
-    
-    
     
     potValue = "analog pin:";
 
@@ -43,8 +50,17 @@ void ofApp::setup(){
 //--------------------------------------------------------------
 void ofApp::update(){
     
+    //VISUAL: --------------------------------------------------
+    
+    //update however many objects there are in noiseCollection
+    for (int i = 0; i < noiseCollection.size(); i++) {
+        noiseCollection[i].update();
+    }
+    
+    //ARDUINO: -------------------------------------------------
 	updateArduino();
     
+    //SOUND: ---------------------------------------------------
     getAverage();
     
     //current volume is always trying to get back to target volume every loop (easing)
@@ -56,12 +72,14 @@ void ofApp::update(){
 
 }
 
+//--------------------------------------------------------------
 void ofApp::getAverage(){
     float sum = 0.;
     //set initial values to make sure they will be replaced by the incoming readings
     float highest = 0.;
     float lowest = 1000.;
     
+    //replace dummy highest and lowest readings with actual readings from within the vector of allReadings
     for(int i = 0; i < allReadings.size(); i++){
         sum += allReadings[i];
         if(allReadings[i] < lowest){
@@ -72,13 +90,14 @@ void ofApp::getAverage(){
         }
     }
     
+    //calculate the difference between the highest and lowest reading within the current vector of data
     float diff = highest - lowest;
     
-    //punch threshhold
-    float threshhold = 100.;
+    //this is the punch threshold
+    float threshold = 80.;
     
     //if there's a punch...
-    if (diff > threshhold) {
+    if (diff > threshold) {
         
         //play with these for sensitivity
         currentVolume -= 0.05f;
@@ -88,6 +107,10 @@ void ofApp::getAverage(){
         //current volume is affected directly by a punch (goes down a lot) but target volume goes
         //down by 0.1. current volume is trying to go back to target volume in update
         cout << "punch" << endl;
+        
+        for (int i = 0; i < noiseCollection.size(); i++) {
+            noiseCollection[i].applyForce();
+        }
         
     }
     
@@ -154,18 +177,25 @@ void ofApp::analogPinChanged(const int & pinNum) {
 //--------------------------------------------------------------
 void ofApp::draw(){
     
-    ofEnableAlphaBlending();
-    ofSetColor(0, 0, 0, 127);
-    ofRect(510, 15, 275, 150);
-    ofDisableAlphaBlending();
+//    ofEnableAlphaBlending();
+//    ofSetColor(0, 0, 0, 127);
+//    ofRect(510, 15, 275, 150);
+//    ofDisableAlphaBlending();
+//    
+//    ofSetColor(255, 255, 255);
+//	if (!bSetupArduino){
+//		ofDrawBitmapString("arduino not ready...\n", 515, 40);
+//	} else {
+//		ofDrawBitmapString(potValue + "\n" + ofToString((int)(128 + 128 * sin(ofGetElapsedTimef()))), 515, 40);
+//
+//	}
     
-    ofSetColor(255, 255, 255);
-	if (!bSetupArduino){
-		ofDrawBitmapString("arduino not ready...\n", 515, 40);
-	} else {
-		ofDrawBitmapString(potValue + "\n" + ofToString((int)(128 + 128 * sin(ofGetElapsedTimef()))), 515, 40);
+    //VISUAL: ----------------------------------------------
+    //draw however many objects there are in noiseCollection
+    for (int i = 0; i < noiseCollection.size(); i++) {
+        noiseCollection[i].render();
+    }
 
-	}
 }
 
 //--------------------------------------------------------------
@@ -198,11 +228,13 @@ void ofApp::mouseReleased(int x, int y, int button){
 
 }
 
+//--------------------------------------------------------------
 void ofApp::audioOut(float * output, int bufferSize, int nChannels) {
     pan = 0.5f;
     float leftScale = 1 - pan;
     float rightScale = pan;
     
+    //this creates the static sound
     for (int i = 0; i < bufferSize; i++) {
         lAudio[i] = output[i*nChannels ] = ofRandom(0, 1) * currentVolume * leftScale;
         lAudio[i] = output[i*nChannels ] = ofRandom(0, 1) * currentVolume * rightScale;
